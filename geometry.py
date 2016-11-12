@@ -2,6 +2,78 @@
 from math import *
 
 
+def padd(p, q):
+    return (p[0]+q[0], p[1]+q[1])
+
+def prmul(s, p):
+    return (s*p[0], s*p[1])
+
+
+# -------------------------------------------------------
+
+canvas = document.getElementById('canvas-fano')
+width = canvas.width
+height = canvas.height
+ctx = canvas.getContext('2d')
+
+def render_fano(ctx):
+
+    #ctx.fillStyle = 'cornflowerblue'
+    ctx.fillStyle = 'black'
+    ctx.strokeStyle = 'blue'
+    ctx.lineWidth = 5
+    
+    offset = (width/2, height/2)
+    ctx.save()
+    ctx.translate(offset[0], 1.3*offset[1]) # BUG BUG doesn't work with *
+
+    R = width/8.
+    R1 = R / cos(pi/3)
+    R2 = R * tan(pi/3)
+    r = 10
+
+    ctx.beginPath()
+    ctx.arc(0, 0, R, 0, 2*pi)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(0, -R1)
+    ctx.lineTo(R2, R)
+    ctx.lineTo(-R2, R)
+    ctx.closePath()
+    ctx.stroke()
+
+    theta = pi/2
+    for i in range(3):
+
+        ctx.beginPath()
+        ctx.moveTo(R*cos(theta), R*sin(theta))
+        ctx.lineTo(R1*cos(theta+pi), R1*sin(theta+pi))
+        ctx.stroke()
+
+        ctx.beginPath()
+        ctx.arc(R*cos(theta), R*sin(theta), r, 0, 2*pi)
+        ctx.fill()
+
+        ctx.beginPath()
+        ctx.arc(R1*cos(theta+pi), R1*sin(theta+pi), r, 0, 2*pi)
+        ctx.fill()
+
+        theta += 2*pi/3
+        #ctx.strokeStyle = 'green'
+
+    ctx.beginPath()
+    ctx.arc(0, 0, r, 0, 2*pi)
+    ctx.fill()
+
+    ctx.restore()
+
+render_fano(ctx)
+
+
+# -------------------------------------------------------
+
+
 def status(message):
     document.getElementById('status').innerHTML = message
 
@@ -13,6 +85,10 @@ def check(result, message):
     if not result:
         debug(message)
 
+
+# -------------------------------------------------------
+
+
 GREEN = "forestgreen"
 BROWN = "peru"
 
@@ -20,25 +96,20 @@ BROWN = "peru"
 #BROWN = "#FF9900"
 
 
-canvas = document.getElementById('canvas')
+canvas = document.getElementById('canvas-thin')
+
+
+
 width = canvas.width
 height = canvas.height
-ctx = canvas.getContext('2d')
+offset = (width/2, height/2)
 
+ctx = canvas.getContext('2d')
 
 mouse_x = 0.5*width
 mouse_y = 0.5*height
 
-# https://developer.mozilla.org/en-US/docs/Web/API/Event
 
-def mouse_event(e):
-    global mouse_x, mouse_y
-    mouse_x = e.offsetX
-    mouse_y = e.offsetY
-    status("mouse_event")
-
-canvas.addEventListener('mousedown', mouse_event, False);
-   
 ctx.font = '38pt Arial'
 #ctx.fillStyle = 'cornflowerblue'
 #ctx.strokeStyle = 'blue'
@@ -62,12 +133,6 @@ def hexagon(x0, y0, r):
     ctx.fill()
     #ctx.stroke()
 
-
-def padd(p, q):
-    return (p[0]+q[0], p[1]+q[1])
-
-def prmul(s, p):
-    return (s*p[0], s*p[1])
 
 
 radius = 50
@@ -134,13 +199,13 @@ class Player(object):
 
 player = Player()
 
+state = "paused"
 
 def render(time):
 
     ctx.clearRect(0, 0, width, height)
 
     ctx.save()
-    offset = (width/2, height/2)
     ctx.translate(offset[0], offset[1]) # BUG BUG doesn't work with *
 
     N = 5
@@ -153,14 +218,64 @@ def render(time):
             p = padd(prmul(i, di), prmul(j, dj))
             hexagon(p[0], p[1], radius1)
 
+    #ctx.globalAlpha = 0.5
     player.render()
+    ctx.restore()
 
+    global state
+    if state == "paused":
+        render_paused(ctx)
+    else:
+        ctx.globalAlpha = 1.0
+
+
+def render_paused(ctx):
+    ctx.globalAlpha = 0.5
+    ctx.fillStyle = "black"
+    ctx.beginPath()
+    ctx.rect(0, 0, width, height)
+    ctx.fill()
+
+    ctx.save()
+    ctx.translate(offset[0], offset[1]) # BUG BUG doesn't work with *
+
+    ctx.globalAlpha = 1.0
+    ctx.beginPath()
+    ctx.arc(0, 0, 70, 0, 2*pi)
+    ctx.fill()
+
+    status("paused")
+    ctx.globalAlpha = 1.0
+    ctx.lineWidth = 10
+    ctx.strokeStyle = "white"
+    ctx.fillStyle = "white"
+    ctx.beginPath()
+    ctx.arc(0, 0, 50, 0, 2*pi)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(20, 0)
+    ctx.lineTo(-10, 20)
+    ctx.lineTo(-10, -20)
+    ctx.closePath()
+    ctx.fill()
     ctx.restore()
 
 
-window.requestNextAnimationFrame(render)
 
-#render()
+# https://developer.mozilla.org/en-US/docs/Web/API/Event
+def mouse_event(e):
+    global mouse_x, mouse_y
+    mouse_x = e.offsetX
+    mouse_y = e.offsetY
+    global state
+    state = "playing"
+    status("play")
+    ctx.globalAlpha = 1.0
+    window.requestNextAnimationFrame(render)
+
+canvas.addEventListener('mousedown', mouse_event, False);
+
+window.requestNextAnimationFrame(render)
 
 
 

@@ -30,6 +30,56 @@
 		var tan = __init__ (__world__.math).tan;
 		var tanh = __init__ (__world__.math).tanh;
 		var trunc = __init__ (__world__.math).trunc;
+		var padd = function (p, q) {
+			return tuple ([p [0] + q [0], p [1] + q [1]]);
+		};
+		var prmul = function (s, p) {
+			return tuple ([s * p [0], s * p [1]]);
+		};
+		var canvas = document.getElementById ('canvas-fano');
+		var width = canvas.width;
+		var height = canvas.height;
+		var ctx = canvas.getContext ('2d');
+		var render_fano = function (ctx) {
+			ctx.fillStyle = 'black';
+			ctx.strokeStyle = 'blue';
+			ctx.lineWidth = 5;
+			var offset = tuple ([width / 2, height / 2]);
+			ctx.save ();
+			ctx.translate (offset [0], 1.3 * offset [1]);
+			var R = width / 8.0;
+			var R1 = R / cos (pi / 3);
+			var R2 = R * tan (pi / 3);
+			var r = 10;
+			ctx.beginPath ();
+			ctx.arc (0, 0, R, 0, 2 * pi);
+			ctx.stroke ();
+			ctx.beginPath ();
+			ctx.moveTo (0, -(R1));
+			ctx.lineTo (R2, R);
+			ctx.lineTo (-(R2), R);
+			ctx.closePath ();
+			ctx.stroke ();
+			var theta = pi / 2;
+			for (var i = 0; i < 3; i++) {
+				ctx.beginPath ();
+				ctx.moveTo (R * cos (theta), R * sin (theta));
+				ctx.lineTo (R1 * cos (theta + pi), R1 * sin (theta + pi));
+				ctx.stroke ();
+				ctx.beginPath ();
+				ctx.arc (R * cos (theta), R * sin (theta), r, 0, 2 * pi);
+				ctx.fill ();
+				ctx.beginPath ();
+				ctx.arc (R1 * cos (theta + pi), R1 * sin (theta + pi), r, 0, 2 * pi);
+				ctx.fill ();
+				theta += (2 * pi) / 3;
+			}
+			ctx.beginPath ();
+			ctx.arc (0, 0, r, 0, 2 * pi);
+			ctx.fill ();
+			ctx.restore ();
+		};
+		render_fano (ctx);
 		var status = function (message) {
 			document.getElementById ('status').innerHTML = message;
 		};
@@ -53,22 +103,13 @@
 		};
 		var GREEN = 'forestgreen';
 		var BROWN = 'peru';
-		var canvas = document.getElementById ('canvas');
+		var canvas = document.getElementById ('canvas-thin');
 		var width = canvas.width;
 		var height = canvas.height;
+		var offset = tuple ([width / 2, height / 2]);
 		var ctx = canvas.getContext ('2d');
 		var mouse_x = 0.5 * width;
 		var mouse_y = 0.5 * height;
-		var mouse_event = function (e) {
-			mouse_x = e.offsetX;
-			mouse_y = e.offsetY;
-			status ('mouse_event');
-		};
-		var keydown_event = function (e) {
-			var key = e.key;
-			status ('keydown: {}'.format (key));
-		};
-		canvas.addEventListener ('mousedown', mouse_event, false);
 		ctx.font = '38pt Arial';
 		ctx.lineWidth = 5;
 		var hexagon = function (x0, y0, r) {
@@ -84,12 +125,6 @@
 				ctx.lineTo (x, y);
 			}
 			ctx.fill ();
-		};
-		var padd = function (p, q) {
-			return tuple ([p [0] + q [0], p [1] + q [1]]);
-		};
-		var prmul = function (s, p) {
-			return tuple ([s * p [0], s * p [1]]);
 		};
 		var radius = 50;
 		var radius1 = 0.85 * radius;
@@ -161,10 +196,10 @@
 			});}
 		});
 		var player = Player ();
+		var state = 'paused';
 		var render = function (time) {
 			ctx.clearRect (0, 0, width, height);
 			ctx.save ();
-			var offset = tuple ([width / 2, height / 2]);
 			ctx.translate (offset [0], offset [1]);
 			var N = 5;
 			ctx.fillStyle = BROWN;
@@ -178,7 +213,50 @@
 			}
 			player.render ();
 			ctx.restore ();
+			if (state == 'paused') {
+				render_paused (ctx);
+			}
+			else {
+				ctx.globalAlpha = 1.0;
+			}
 		};
+		var render_paused = function (ctx) {
+			ctx.globalAlpha = 0.5;
+			ctx.fillStyle = 'black';
+			ctx.beginPath ();
+			ctx.rect (0, 0, width, height);
+			ctx.fill ();
+			ctx.save ();
+			ctx.translate (offset [0], offset [1]);
+			ctx.globalAlpha = 1.0;
+			ctx.beginPath ();
+			ctx.arc (0, 0, 70, 0, 2 * pi);
+			ctx.fill ();
+			status ('paused');
+			ctx.globalAlpha = 1.0;
+			ctx.lineWidth = 10;
+			ctx.strokeStyle = 'white';
+			ctx.fillStyle = 'white';
+			ctx.beginPath ();
+			ctx.arc (0, 0, 50, 0, 2 * pi);
+			ctx.stroke ();
+			ctx.beginPath ();
+			ctx.moveTo (20, 0);
+			ctx.lineTo (-(10), 20);
+			ctx.lineTo (-(10), -(20));
+			ctx.closePath ();
+			ctx.fill ();
+			ctx.restore ();
+		};
+		var mouse_event = function (e) {
+			mouse_x = e.offsetX;
+			mouse_y = e.offsetY;
+			state = 'playing';
+			status ('play');
+			ctx.globalAlpha = 1.0;
+			window.requestNextAnimationFrame (render);
+		};
+		canvas.addEventListener ('mousedown', mouse_event, false);
 		window.requestNextAnimationFrame (render);
 		__pragma__ ('<use>' +
 			'math' +
@@ -212,7 +290,6 @@
 			__all__.hypot = hypot;
 			__all__.i = i;
 			__all__.inf = inf;
-			__all__.keydown_event = keydown_event;
 			__all__.log = log;
 			__all__.log10 = log10;
 			__all__.log1p = log1p;
@@ -221,6 +298,7 @@
 			__all__.mouse_x = mouse_x;
 			__all__.mouse_y = mouse_y;
 			__all__.nan = nan;
+			__all__.offset = offset;
 			__all__.padd = padd;
 			__all__.pi = pi;
 			__all__.player = player;
@@ -230,9 +308,12 @@
 			__all__.radius = radius;
 			__all__.radius1 = radius1;
 			__all__.render = render;
+			__all__.render_fano = render_fano;
+			__all__.render_paused = render_paused;
 			__all__.sin = sin;
 			__all__.sinh = sinh;
 			__all__.sqrt = sqrt;
+			__all__.state = state;
 			__all__.status = status;
 			__all__.tan = tan;
 			__all__.tanh = tanh;

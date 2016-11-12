@@ -20,12 +20,21 @@ pre {
   white-space: pre-wrap;
 }
 
+canvas {
+  align-items: center;
+  /* border: 2px solid #000000; */
+}
+
 footer {
   align-items: center;
   display: flex;
   justify-content: center;
   margin-top: 4em;
   text-align: center;
+}
+
+ol {
+list-style-type: disc;
 }
 
 /* 01 Centering */
