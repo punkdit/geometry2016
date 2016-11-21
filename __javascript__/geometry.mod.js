@@ -33,16 +33,333 @@
 		var padd = function (p, q) {
 			return tuple ([p [0] + q [0], p [1] + q [1]]);
 		};
+		var psub = function (p, q) {
+			return tuple ([p [0] - q [0], p [1] - q [1]]);
+		};
 		var prmul = function (s, p) {
 			return tuple ([s * p [0], s * p [1]]);
 		};
+		var pnorm = function (p) {
+			return Math.pow (Math.pow (p [0], 2) + Math.pow (p [1], 2), 0.5);
+		};
+		var pdist = function (p, q) {
+			return pnorm (psub (p, q));
+		};
+		var status = function (message) {
+			document.getElementById ('status').innerHTML = message;
+		};
+		var debug = function () {
+			var info = tuple ([].slice.apply (arguments).slice (0));
+			var element = document.getElementById ('status');
+			element.innerHTML += ' '.join (function () {
+				var __accu0__ = [];
+				var __iterable0__ = info;
+				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+					var i = __iterable0__ [__index0__];
+					__accu0__.append (str (i));
+				}
+				return __accu0__;
+			} ());
+		};
+		var check = function (result, message) {
+			if (!(result)) {
+				debug (message);
+			}
+		};
+		var Graphic = __class__ ('Graphic', [object], {
+			get __init__ () {return __get__ (this, function (self, canvas, colour) {
+				self.canvas = canvas;
+				self.ctx = canvas.ctx;
+				self.children = list ([]);
+				self.colour = colour;
+				self.highlight = '';
+				canvas.items.add (self);
+			});}
+		});
+		var Line = __class__ ('Line', [Graphic], {
+			get __init__ () {return __get__ (this, function (self, canvas, x0, y0, x1, y1, width, colour) {
+				if (typeof width == 'undefined' || (width != null && width .__class__ == __kwargdict__)) {;
+					var width = 1.0;
+				};
+				if (typeof colour == 'undefined' || (colour != null && colour .__class__ == __kwargdict__)) {;
+					var colour = 'black';
+				};
+				self.c0 = tuple ([x0, y0]);
+				self.c1 = tuple ([x1, y1]);
+				self.width = width;
+				Graphic.__init__ (self, canvas, colour);
+			});},
+			get render () {return __get__ (this, function (self) {
+				var ctx = self.ctx;
+				ctx.lineWidth = self.width;
+				if (self.highlight != '') {
+					ctx.strokeStyle = self.highlight;
+				}
+				else {
+					ctx.strokeStyle = self.colour;
+				}
+				ctx.beginPath ();
+				ctx.moveTo (self.c0 [0], self.c0 [1]);
+				ctx.lineTo (self.c1 [0], self.c1 [1]);
+				ctx.stroke ();
+			});},
+			get distance () {return __get__ (this, function (self, x, y) {
+				var p = tuple ([x, y]);
+				var __left0__ = tuple ([self.c0, self.c1]);
+				var c0 = __left0__ [0];
+				var c1 = __left0__ [1];
+				var r = pdist (c0, c1);
+				var a = pdist (c0, p);
+				var b = pdist (c1, p);
+				return (a + b) - r;
+			});}
+		});
+		var Circle = __class__ ('Circle', [Graphic], {
+			get __init__ () {return __get__ (this, function (self, canvas, x, y, r, width, colour) {
+				if (typeof width == 'undefined' || (width != null && width .__class__ == __kwargdict__)) {;
+					var width = 1.0;
+				};
+				if (typeof colour == 'undefined' || (colour != null && colour .__class__ == __kwargdict__)) {;
+					var colour = 'black';
+				};
+				self.c = tuple ([x, y]);
+				self.r = r;
+				self.width = width;
+				Graphic.__init__ (self, canvas, colour);
+			});},
+			get render () {return __get__ (this, function (self) {
+				var ctx = self.ctx;
+				if (self.highlight != '') {
+					ctx.strokeStyle = self.highlight;
+				}
+				else {
+					ctx.strokeStyle = self.colour;
+				}
+				ctx.lineWidth = self.width;
+				ctx.beginPath ();
+				ctx.arc (self.c [0], self.c [1], self.r, 0, 2 * pi);
+				ctx.stroke ();
+			});},
+			get distance () {return __get__ (this, function (self, x, y) {
+				var r = pdist (self.c, tuple ([x, y]));
+				return abs (r - self.r);
+			});}
+		});
+		var Disc = __class__ ('Disc', [Circle], {
+			get render () {return __get__ (this, function (self) {
+				var ctx = self.ctx;
+				if (self.highlight != '') {
+					ctx.fillStyle = self.highlight;
+				}
+				else {
+					ctx.fillStyle = self.colour;
+				}
+				ctx.beginPath ();
+				ctx.arc (self.c [0], self.c [1], self.r, 0, 2 * pi);
+				ctx.fill ();
+			});},
+			get distance () {return __get__ (this, function (self, x, y) {
+				var r = pdist (self.c, tuple ([x, y]));
+				if (r > self.r) {
+					return r - self.r;
+				}
+				return 0.0;
+			});}
+		});
+		var Canvas = __class__ ('Canvas', [object], {
+			get __init__ () {return __get__ (this, function (self, py_name, offset) {
+				if (typeof py_name == 'undefined' || (py_name != null && py_name .__class__ == __kwargdict__)) {;
+					var py_name = 'canvas';
+				};
+				if (typeof offset == 'undefined' || (offset != null && offset .__class__ == __kwargdict__)) {;
+					var offset = tuple ([0, 0]);
+				};
+				var canvas = document.getElementById (py_name);
+				self.width = canvas.width;
+				self.height = canvas.height;
+				self.ctx = canvas.getContext ('2d');
+				self.offset = offset;
+				self.items = list ([]);
+				canvas.addEventListener ('mousedown', self.mouse_event, false);
+			});},
+			get mouse_event () {return __get__ (this, function (self, e) {
+				var mouse_x = e.offsetX;
+				var mouse_y = e.offsetY;
+				status ('mouse!');
+				var __iterable0__ = self.items;
+				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+					var item = __iterable0__ [__index0__];
+					item.highlight = '';
+				}
+				var item = self.hit (mouse_x, mouse_y);
+				if (item === null) {
+					self.render ();
+					return ;
+				}
+				if (len (item.children)) {
+					var __iterable0__ = item.children;
+					for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+						var child = __iterable0__ [__index0__];
+						debug (child.__class__.__name__, 'red');
+						child.highlight = 'red';
+					}
+				}
+				item.highlight = 'red';
+				self.render ();
+			});},
+			get translate () {return __get__ (this, function (self, dx, dy) {
+				self.offset = padd (self.offset, tuple ([dx, dy]));
+			});},
+			get line () {return __get__ (this, function (self, x0, y0, x1, y1, width, colour) {
+				if (typeof width == 'undefined' || (width != null && width .__class__ == __kwargdict__)) {;
+					var width = 1.0;
+				};
+				if (typeof colour == 'undefined' || (colour != null && colour .__class__ == __kwargdict__)) {;
+					var colour = 'black';
+				};
+				var __left0__ = self.offset;
+				var dx = __left0__ [0];
+				var dy = __left0__ [1];
+				var line = Line (self, x0 + dx, y0 + dy, x1 + dx, y1 + dy, width, colour);
+				return line;
+			});},
+			get circle () {return __get__ (this, function (self, x, y, r, width, colour) {
+				if (typeof width == 'undefined' || (width != null && width .__class__ == __kwargdict__)) {;
+					var width = 1.0;
+				};
+				if (typeof colour == 'undefined' || (colour != null && colour .__class__ == __kwargdict__)) {;
+					var colour = 'black';
+				};
+				var __left0__ = self.offset;
+				var dx = __left0__ [0];
+				var dy = __left0__ [1];
+				return Circle (self, x + dx, y + dy, r, width, colour);
+			});},
+			get disc () {return __get__ (this, function (self, x, y, r, colour) {
+				if (typeof colour == 'undefined' || (colour != null && colour .__class__ == __kwargdict__)) {;
+					var colour = 'black';
+				};
+				var __left0__ = self.offset;
+				var dx = __left0__ [0];
+				var dy = __left0__ [1];
+				return Disc (self, x + dx, y + dy, r, width, colour);
+			});},
+			get render () {return __get__ (this, function (self) {
+				var ctx = self.ctx;
+				var __left0__ = tuple ([self.width, self.height]);
+				var width = __left0__ [0];
+				var height = __left0__ [1];
+				ctx.clearRect (0, 0, width, height);
+				ctx.save ();
+				ctx.translate (width / 2, height / 2);
+				var __iterable0__ = self.items;
+				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+					var item = __iterable0__ [__index0__];
+					item.render (ctx);
+				}
+				ctx.restore ();
+			});},
+			get hit () {return __get__ (this, function (self, x, y) {
+				var items = self.items;
+				if (!(items)) {
+					return null;
+				}
+				var __left0__ = tuple ([self.width, self.height]);
+				var width = __left0__ [0];
+				var height = __left0__ [1];
+				x -= width / 2;
+				y -= height / 2;
+				var best = null;
+				var r = 20;
+				var __iterable0__ = items;
+				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+					var item = __iterable0__ [__index0__];
+					var r1 = item.distance (x, y);
+					if (r1 < r) {
+						var best = item;
+						var r = r1;
+					}
+				}
+				return best;
+			});}
+		});
+		var Flag = __class__ ('Flag', [object], {
+			get __init__ () {return __get__ (this, function (self, line) {
+				self.line = line;
+				self.point = null;
+			});}
+		});
+		var fano_chambers = function () {
+			var POINT = 'ForestGreen';
+			var LINE = 'FireBrick';
+			var canvas = Canvas ('canvas-fano-chambers');
+			var __left0__ = tuple ([canvas.width, canvas.height]);
+			var width = __left0__ [0];
+			var height = __left0__ [1];
+			var R = 0.22 * height;
+			var R1 = R / cos (pi / 3);
+			var R2 = R * tan (pi / 3);
+			var r = 10;
+			canvas.translate (-(0.25) * width, 0.0);
+			var L1 = canvas.circle (0, 0, R, 5, LINE);
+			var L2 = canvas.line (0, -(R1), R2, R, 5, LINE);
+			var L3 = canvas.line (R2, R, -(R2), R, 5, LINE);
+			var L4 = canvas.line (-(R2), R, 0, -(R1), 5, LINE);
+			var theta = pi / 2;
+			var L5 = canvas.line (R * cos (theta), R * sin (theta), R1 * cos (theta + pi), R1 * sin (theta + pi), 5, LINE);
+			var P1 = canvas.disc (R * cos (theta), R * sin (theta), r, POINT);
+			var P2 = canvas.disc (R1 * cos (theta + pi), R1 * sin (theta + pi), r, POINT);
+			theta += (2 * pi) / 3;
+			var L6 = canvas.line (R * cos (theta), R * sin (theta), R1 * cos (theta + pi), R1 * sin (theta + pi), 5, LINE);
+			var P3 = canvas.disc (R * cos (theta), R * sin (theta), r, POINT);
+			var P4 = canvas.disc (R1 * cos (theta + pi), R1 * sin (theta + pi), r, POINT);
+			theta += (2 * pi) / 3;
+			var L7 = canvas.line (R * cos (theta), R * sin (theta), R1 * cos (theta + pi), R1 * sin (theta + pi), 5, LINE);
+			var P5 = canvas.disc (R * cos (theta), R * sin (theta), r, POINT);
+			var P6 = canvas.disc (R1 * cos (theta + pi), R1 * sin (theta + pi), r, POINT);
+			var P7 = canvas.disc (0, 0, r, POINT);
+			var points = list ([P7, P4, P6, P3, P1, P2, P5]);
+			var lines = list ([L7, L6, L3, L4, L1, L5, L2]);
+			var R = 0.35 * height;
+			canvas.translate (+(0.55) * width, -(0.1) * height);
+			var dtheta = (2 * pi) / 14;
+			var theta = (3 * pi) / 2;
+			for (var i = 0; i < 14; i++) {
+				var item = canvas.line (R * cos (theta), R * sin (theta), R * cos (theta - dtheta), R * sin (theta - dtheta), 5.0);
+				if (__mod__ (i, 2) == 0) {
+					item.children.append (points [i / 2]);
+					item.children.append (lines [i / 2]);
+				}
+				else {
+					item.children.append (points [(i - 1) / 2]);
+					item.children.append (lines [__mod__ ((i + 1) / 2, 7)]);
+				}
+				if (__mod__ (i, 2) == 0) {
+					var item = canvas.line (R * cos (theta), R * sin (theta), R * cos (theta + 9 * dtheta), R * sin (theta + 9 * dtheta), 5.0);
+					item.children.append (points [__mod__ ((i + 4) / 2, 7)]);
+					item.children.append (lines [i / 2]);
+				}
+				theta -= dtheta;
+			}
+			var theta = pi / 2;
+			for (var i = 0; i < 7; i++) {
+				canvas.disc (R * cos (theta), -(R) * sin (theta), r, LINE);
+				theta += dtheta;
+				canvas.disc (R * cos (theta), -(R) * sin (theta), r, POINT);
+				theta += dtheta;
+			}
+			canvas.render ();
+		};
+		fano_chambers ();
 		var canvas = document.getElementById ('canvas-fano');
 		var width = canvas.width;
 		var height = canvas.height;
 		var ctx = canvas.getContext ('2d');
+		var POINT = 'ForestGreen';
+		var LINE = 'FireBrick';
 		var render_fano = function (ctx) {
-			ctx.fillStyle = 'black';
-			ctx.strokeStyle = 'blue';
+			ctx.fillStyle = POINT;
+			ctx.strokeStyle = LINE;
 			ctx.lineWidth = 5;
 			var offset = tuple ([width / 2, height / 2]);
 			ctx.save ();
@@ -80,27 +397,56 @@
 			ctx.restore ();
 		};
 		render_fano (ctx);
-		var status = function (message) {
-			document.getElementById ('status').innerHTML = message;
-		};
-		var debug = function () {
-			var info = tuple ([].slice.apply (arguments).slice (0));
-			var element = document.getElementById ('status');
-			element.innerHTML += ' '.join (function () {
-				var __accu0__ = [];
-				var __iterable0__ = info;
-				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-					var i = __iterable0__ [__index0__];
-					__accu0__.append (str (i));
-				}
-				return __accu0__;
-			} ()) + '<br>';
-		};
-		var check = function (result, message) {
-			if (!(result)) {
-				debug (message);
+		var canvas = document.getElementById ('canvas-chambers');
+		var width = canvas.width;
+		var height = canvas.height;
+		var ctx = canvas.getContext ('2d');
+		var render_chambers = function (ctx) {
+			ctx.strokeStyle = 'black';
+			ctx.lineWidth = 5;
+			var offset = tuple ([width / 2, height / 2]);
+			ctx.save ();
+			ctx.translate (offset [0], 1.0 * offset [1]);
+			var R = 0.44 * width;
+			var r = 10;
+			var theta = pi / 2;
+			var dtheta = (2 * pi) / 14;
+			for (var i = 0; i < 14; i++) {
+				ctx.beginPath ();
+				ctx.moveTo (R * cos (theta), R * sin (theta));
+				ctx.lineTo (R * cos (theta + dtheta), R * sin (theta + dtheta));
+				ctx.stroke ();
+				theta += dtheta;
 			}
+			var theta = pi / 2;
+			for (var i = 0; i < 7; i++) {
+				ctx.beginPath ();
+				ctx.moveTo (R * cos (theta), -(R) * sin (theta));
+				ctx.lineTo (R * cos (theta + 5 * dtheta), -(R) * sin (theta + 5 * dtheta));
+				ctx.stroke ();
+				theta += dtheta;
+				ctx.beginPath ();
+				ctx.moveTo (R * cos (theta), -(R) * sin (theta));
+				ctx.lineTo (R * cos (theta - 5 * dtheta), -(R) * sin (theta - 5 * dtheta));
+				ctx.stroke ();
+				theta += dtheta;
+			}
+			var theta = pi / 2;
+			for (var i = 0; i < 7; i++) {
+				ctx.fillStyle = LINE;
+				ctx.beginPath ();
+				ctx.arc (R * cos (theta), -(R) * sin (theta), r, 0, 2 * pi);
+				ctx.fill ();
+				theta += dtheta;
+				ctx.fillStyle = POINT;
+				ctx.beginPath ();
+				ctx.arc (R * cos (theta), -(R) * sin (theta), r, 0, 2 * pi);
+				ctx.fill ();
+				theta += dtheta;
+			}
+			ctx.restore ();
 		};
+		render_chambers (ctx);
 		var GREEN = 'forestgreen';
 		var BROWN = 'peru';
 		var canvas = document.getElementById ('canvas-thin');
@@ -257,13 +603,20 @@
 			window.requestNextAnimationFrame (render);
 		};
 		canvas.addEventListener ('mousedown', mouse_event, false);
-		window.requestNextAnimationFrame (render);
 		__pragma__ ('<use>' +
 			'math' +
 		'</use>')
 		__pragma__ ('<all>')
 			__all__.BROWN = BROWN;
+			__all__.Canvas = Canvas;
+			__all__.Circle = Circle;
+			__all__.Disc = Disc;
+			__all__.Flag = Flag;
 			__all__.GREEN = GREEN;
+			__all__.Graphic = Graphic;
+			__all__.LINE = LINE;
+			__all__.Line = Line;
+			__all__.POINT = POINT;
 			__all__.Player = Player;
 			__all__.acos = acos;
 			__all__.acosh = acosh;
@@ -284,6 +637,7 @@
 			__all__.e = e;
 			__all__.exp = exp;
 			__all__.expm1 = expm1;
+			__all__.fano_chambers = fano_chambers;
 			__all__.floor = floor;
 			__all__.height = height;
 			__all__.hexagon = hexagon;
@@ -300,14 +654,18 @@
 			__all__.nan = nan;
 			__all__.offset = offset;
 			__all__.padd = padd;
+			__all__.pdist = pdist;
 			__all__.pi = pi;
 			__all__.player = player;
+			__all__.pnorm = pnorm;
 			__all__.pow = pow;
 			__all__.prmul = prmul;
+			__all__.psub = psub;
 			__all__.radians = radians;
 			__all__.radius = radius;
 			__all__.radius1 = radius1;
 			__all__.render = render;
+			__all__.render_chambers = render_chambers;
 			__all__.render_fano = render_fano;
 			__all__.render_paused = render_paused;
 			__all__.sin = sin;

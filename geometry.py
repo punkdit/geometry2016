@@ -5,22 +5,305 @@ from math import *
 def padd(p, q):
     return (p[0]+q[0], p[1]+q[1])
 
+def psub(p, q):
+    return (p[0]-q[0], p[1]-q[1])
+
 def prmul(s, p):
     return (s*p[0], s*p[1])
 
+def pnorm(p):
+    return (p[0]**2 + p[1]**2)**0.5
+
+def pdist(p, q):
+    return pnorm(psub(p, q))
+
 
 # -------------------------------------------------------
+
+
+def status(message):
+    document.getElementById('status').innerHTML = message
+
+def debug(*info):
+    element = document.getElementById('status')
+    element.innerHTML += ' '.join([str(i) for i in info]) #+ "<br>"
+
+def check(result, message):
+    if not result:
+        debug(message)
+
+
+# -------------------------------------------------------
+
+class Graphic(object):
+    "lives in a canvas"
+    def __init__(self, canvas, colour):
+        self.canvas = canvas
+        self.ctx = canvas.ctx
+        self.children = []
+        self.colour = colour
+        self.highlight = ""
+        canvas.items.add(self)
+
+
+class Line(Graphic):
+    def __init__(self, canvas, x0, y0, x1, y1, width=1., colour="black"):
+        self.c0 = (x0, y0)
+        self.c1 = (x1, y1)
+        self.width = width
+        Graphic.__init__(self, canvas, colour)
+
+    def render(self):
+        ctx = self.ctx
+        ctx.lineWidth = self.width
+        if self.highlight != "":
+            ctx.strokeStyle = self.highlight
+        else:
+            ctx.strokeStyle = self.colour
+        ctx.beginPath()
+        ctx.moveTo(self.c0[0], self.c0[1])
+        ctx.lineTo(self.c1[0], self.c1[1])
+        ctx.stroke()
+
+    def distance(self, x, y):
+        p = (x, y)
+        c0, c1 = self.c0, self.c1
+        r = pdist(c0, c1)
+        a = pdist(c0, p)
+        b = pdist(c1, p)
+        return (a+b)-r # lazy man's metric
+
+
+class Circle(Graphic):
+    def __init__(self, canvas, x, y, r, width=1., colour="black"):
+        self.c = (x, y)
+        self.r = r
+        self.width = width
+        Graphic.__init__(self, canvas, colour)
+
+    def render(self):
+        ctx = self.ctx
+        if self.highlight != "":
+            ctx.strokeStyle = self.highlight
+        else:
+            ctx.strokeStyle = self.colour
+        ctx.lineWidth = self.width
+        ctx.beginPath()
+        ctx.arc(self.c[0], self.c[1], self.r, 0, 2*pi)
+        ctx.stroke()
+
+    def distance(self, x, y):
+        r = pdist(self.c, (x, y))
+        return abs(r - self.r)
+
+
+class Disc(Circle):
+    def render(self):
+        ctx = self.ctx
+        if self.highlight != "":
+            ctx.fillStyle = self.highlight
+        else:
+            ctx.fillStyle = self.colour
+        ctx.beginPath()
+        ctx.arc(self.c[0], self.c[1], self.r, 0, 2*pi)
+        ctx.fill()
+
+    def distance(self, x, y):
+        r = pdist(self.c, (x, y))
+        if r > self.r:
+            return r - self.r
+        return 0.
+
+
+class Canvas(object):
+    def __init__(self, name='canvas', offset=(0, 0)):
+        canvas = document.getElementById(name)
+        self.width = canvas.width
+        self.height = canvas.height
+        self.ctx = canvas.getContext('2d')
+        self.offset = offset
+        self.items = []
+        canvas.addEventListener('mousedown', self.mouse_event, False);
+
+    def mouse_event(self, e):
+        mouse_x = e.offsetX
+        mouse_y = e.offsetY
+        status("mouse!")
+        #window.requestNextAnimationFrame(render)
+
+        for item in self.items:
+            item.highlight = ""
+
+        item = self.hit(mouse_x, mouse_y)
+
+        if item is None:
+            self.render()
+            return
+
+        if len(item.children):
+            for child in item.children:
+                debug(child.__class__.__name__, "red")
+                child.highlight = "red"
+        item.highlight = "red"
+
+        self.render()
+
+    def translate(self, dx, dy):
+        self.offset = padd(self.offset, (dx, dy))
+
+    def line(self, x0, y0, x1, y1, width=1., colour="black"):
+        dx, dy = self.offset
+        line = Line(self, x0+dx, y0+dy, x1+dx, y1+dy, width, colour)
+        return line
+
+    def circle(self, x, y, r, width=1., colour="black"):
+        dx, dy = self.offset
+        return Circle(self, x+dx, y+dy, r, width, colour)
+
+    def disc(self, x, y, r, colour="black"):
+        dx, dy = self.offset
+        return Disc(self, x+dx, y+dy, r, width, colour)
+
+    def render(self):
+        ctx = self.ctx
+        width, height = self.width, self.height
+        #ctx.fillStyle = "lightgrey"
+        ctx.clearRect(0, 0, width, height)
+        #ctx.beginPath()
+        #ctx.rect(0, 0, width, height)
+        #ctx.fill()
+        ctx.save()
+        ctx.translate(width/2, height/2)
+        for item in self.items:
+            item.render(ctx)
+        ctx.restore()
+
+    def hit(self, x, y):
+        items = self.items
+        if not items:
+            return None
+        width, height = self.width, self.height
+        x -= width/2
+        y -= height/2
+        best = None
+        r = 20 # click radius
+        for item in items:
+            r1 = item.distance(x, y)
+            if r1<r:
+                best = item
+                r = r1
+        return best
+
+
+class Flag(object):
+    def __init__(self, line):
+        self.line = line
+        self.point = None
+
+
+def fano_chambers():
+    POINT = "ForestGreen"
+    LINE = "FireBrick"
+
+    canvas = Canvas("canvas-fano-chambers")
+
+    width, height = canvas.width, canvas.height
+
+    R = 0.22*height
+    R1 = R / cos(pi/3)
+    R2 = R * tan(pi/3)
+    r = 10
+
+    canvas.translate(-0.25*width, 0.)
+
+    L1 = canvas.circle(0, 0, R, 5, LINE)
+    L2 = canvas.line(0, -R1, R2, R, 5, LINE)
+    L3 = canvas.line(R2, R, -R2, R, 5, LINE)
+    L4 = canvas.line(-R2, R, 0, -R1, 5, LINE)
+
+    theta = pi/2
+
+    L5 = canvas.line(R*cos(theta), R*sin(theta), R1*cos(theta+pi), R1*sin(theta+pi), 5, LINE)
+    P1 = canvas.disc(R*cos(theta), R*sin(theta), r, POINT)
+    P2 = canvas.disc(R1*cos(theta+pi), R1*sin(theta+pi), r, POINT)
+    theta += 2*pi/3
+
+    L6 = canvas.line(R*cos(theta), R*sin(theta), R1*cos(theta+pi), R1*sin(theta+pi), 5, LINE)
+    P3 = canvas.disc(R*cos(theta), R*sin(theta), r, POINT)
+    P4 = canvas.disc(R1*cos(theta+pi), R1*sin(theta+pi), r, POINT)
+    theta += 2*pi/3
+
+    L7 = canvas.line(R*cos(theta), R*sin(theta), R1*cos(theta+pi), R1*sin(theta+pi), 5, LINE)
+    P5 = canvas.disc(R*cos(theta), R*sin(theta), r, POINT)
+    P6 = canvas.disc(R1*cos(theta+pi), R1*sin(theta+pi), r, POINT)
+
+    P7 = canvas.disc(0, 0, r, POINT)
+
+    points = [P7, P4, P6, P3, P1, P2, P5]
+    lines =  [L7, L6, L3, L4, L1, L5, L2]
+
+    # Chambers
+
+    R = 0.35*height
+    canvas.translate(+0.55*width, -0.1*height)
+
+    dtheta = (2*pi)/14
+    theta = 3*pi/2
+    for i in range(14):
+        item = canvas.line(R*cos(theta), R*sin(theta), R*cos(theta-dtheta), R*sin(theta-dtheta), 5.)
+        if i%2==0:
+            item.children.append(points[i/2])
+            item.children.append(lines[i/2])
+        else:
+            item.children.append(points[(i-1)/2])
+            item.children.append(lines[((i+1)/2)%7])
+
+        if i%2==0:
+            item = canvas.line(R*cos(theta), R*sin(theta), R*cos(theta+9*dtheta), R*sin(theta+9*dtheta), 5.)
+            item.children.append(points[((i+4)/2)%7])
+            item.children.append(lines[i/2])
+
+        theta -= dtheta
+
+
+#    theta = pi/2
+#    for i in range(7):
+#        item = canvas.line(-R*cos(theta), -R*sin(theta), -R*cos(theta+5*dtheta), -R*sin(theta+5*dtheta), 5.)
+#        theta += 2*dtheta
+
+    theta = pi/2
+    for i in range(7):
+        canvas.disc(R*cos(theta), -R*sin(theta), r, LINE)
+        theta += dtheta
+
+        canvas.disc(R*cos(theta), -R*sin(theta), r, POINT)
+        theta += dtheta
+
+    canvas.render()
+
+
+fano_chambers()
+
+
+# -------------------------------------------------------
+    
 
 canvas = document.getElementById('canvas-fano')
 width = canvas.width
 height = canvas.height
 ctx = canvas.getContext('2d')
 
+POINT = "ForestGreen"
+LINE = "FireBrick"
+
+#LINE = "ForestGreen"
+#POINT = "FireBrick"
+
 def render_fano(ctx):
 
     #ctx.fillStyle = 'cornflowerblue'
-    ctx.fillStyle = 'black'
-    ctx.strokeStyle = 'blue'
+    ctx.fillStyle = POINT
+    ctx.strokeStyle = LINE
     ctx.lineWidth = 5
     
     offset = (width/2, height/2)
@@ -74,16 +357,74 @@ render_fano(ctx)
 # -------------------------------------------------------
 
 
-def status(message):
-    document.getElementById('status').innerHTML = message
+canvas = document.getElementById('canvas-chambers')
+width = canvas.width
+height = canvas.height
+ctx = canvas.getContext('2d')
 
-def debug(*info):
-    element = document.getElementById('status')
-    element.innerHTML += ' '.join([str(i) for i in info]) + "<br>"
+def render_chambers(ctx):
 
-def check(result, message):
-    if not result:
-        debug(message)
+    #ctx.fillStyle = 'cornflowerblue'
+    ctx.strokeStyle = 'black'
+    ctx.lineWidth = 5
+    
+    offset = (width/2, height/2)
+    ctx.save()
+    ctx.translate(offset[0], 1.0*offset[1]) # BUG BUG doesn't work with *
+
+    R = 0.44*width
+    r = 10
+
+    theta = pi/2
+    dtheta = (2*pi)/14
+    for i in range(14):
+
+        ctx.beginPath()
+        ctx.moveTo(R*cos(theta), R*sin(theta))
+        ctx.lineTo(R*cos(theta+dtheta), R*sin(theta+dtheta))
+        ctx.stroke()
+
+        theta += dtheta
+
+    theta = pi/2
+    for i in range(7):
+
+        ctx.beginPath()
+        ctx.moveTo(R*cos(theta), -R*sin(theta))
+        ctx.lineTo(R*cos(theta+5*dtheta), -R*sin(theta+5*dtheta))
+        ctx.stroke()
+
+        theta += dtheta
+
+        ctx.beginPath()
+        ctx.moveTo(R*cos(theta), -R*sin(theta))
+        ctx.lineTo(R*cos(theta-5*dtheta), -R*sin(theta-5*dtheta))
+        ctx.stroke()
+
+        theta += dtheta
+
+    theta = pi/2
+    for i in range(7):
+
+        ctx.fillStyle = LINE
+        ctx.beginPath()
+        ctx.arc(R*cos(theta), -R*sin(theta), r, 0, 2*pi)
+        ctx.fill()
+
+        theta += dtheta
+
+        ctx.fillStyle = POINT
+        ctx.beginPath()
+        ctx.arc(R*cos(theta), -R*sin(theta), r, 0, 2*pi)
+        ctx.fill()
+
+        theta += dtheta
+
+
+    ctx.restore()
+
+render_chambers(ctx)
+
 
 
 # -------------------------------------------------------
@@ -275,7 +616,7 @@ def mouse_event(e):
 
 canvas.addEventListener('mousedown', mouse_event, False);
 
-window.requestNextAnimationFrame(render)
+#window.requestNextAnimationFrame(render)
 
 
 

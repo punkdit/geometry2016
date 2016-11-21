@@ -45,6 +45,7 @@ a theory that treated lines and points the same way:
 This is called <em>projective</em> geometry:
 we added some more points at infinity so that those
 parallel lines have somewhere to meet.
+<!-- There's a third axiom that we skipped, which is ... -->
 
 <p>
 Now that we have some axioms, we can try drawing some
@@ -60,10 +61,10 @@ geometry:
 </p>
     <p align="center"><canvas id='canvas-fano' width='600' height='300'> Canvas Fail </canvas> </p>
 <p>
-This is called the Fano plane, it has seven points and seven lines.
-There's a wonky looking line that looks like a circle, but we need this
-guy to satisfy our axioms. 
-And you should check the axioms yourself: 
+This is called the <u>Fano plane</u>. It has seven points and seven lines.
+There's a weirdo line that looks like a circle, but we need this
+guy so that all the axioms are satisfied.
+And you should check this yourself: 
 for any two points there is a unique line (going through them),
 and for any two lines
 there is a unique point (where they intersect).
@@ -73,23 +74,47 @@ there is a unique point (where they intersect).
 This is a schematic diagram: even though I drew blue lines
 and lines have infinitely many points on them, each of these lines only
 has three points.
-
-<p>
-You may be used to thinking of lines and points and intersections,
-but recently I've been learning about a more complicated construction,
-known as a <em>flag</em>.
 </p>
 
+<p>
+Just to emphasize the abstract nature of this construction, here is
+another picture of the Fano plane.
+Each point is represented as a green dot,
+and each line is represented by a red dot.
+These dots have connections that show how each point
+of the Fano plane lives on three lines, and vice-versa:
+</p>
 
+    <p align="center"><canvas id='canvas-chambers' width='300' height='300'> Canvas Fail </canvas> </p>
 
+<p>
+So each one of these black connecting lines represents a relation
+between a point and a line of the Fano plane.
+This relation is very simple, it just states that a point
+lies on a line. Or, a line contains a point.
+It gets a bit clunky how english has two ways of
+saying this, so we just say instead that 
+a point and a line are <em>incident.</em>
+</p>
 
+    <p align="center"><canvas id='canvas-fano-chambers' width='800' height='400'> Canvas Fail </canvas> </p>
+    <div id = "status"></div>
+
+<p>
 Hexagons:
+</p>
 
     <p align="center"> <canvas id='canvas-thin' width='600' height='300' tabindex='1'> Canvas Fail </canvas> </p>
 
-    <div id = "status"></div>
     <script src='requestNextAnimationFrame.js'></script>
     <script src='__javascript__/geometry.js'></script>
+
+<h2>References:</h2>
+
+[1] <a href="https://blogs.scientificamerican.com/roots-of-unity/a-few-of-my-favorite-spaces-the-fano-plane/#">
+A Few of My Favorite Spaces: The Fano Plane</a>
+
+
 
       <section id="share">
         <h2>Share the love!</h2>
