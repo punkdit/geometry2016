@@ -42,9 +42,15 @@ class Graphic(object):
         self.ctx = canvas.ctx
         self.children = []
         self.colour = colour
-        self.highlight = ""
+        self.highlight = False
         canvas.items.add(self)
 
+    def distance(self, x, y):
+        return 99999
+
+
+HIGHTLIGHT = "orange"
+EXPAND = 2.0
 
 class Line(Graphic):
     def __init__(self, canvas, x0, y0, x1, y1, width=1., colour="black"):
@@ -55,11 +61,16 @@ class Line(Graphic):
 
     def render(self):
         ctx = self.ctx
+        if self.highlight:
+            ctx.strokeStyle = HIGHTLIGHT
+            ctx.lineWidth = EXPAND*self.width
+            ctx.beginPath()
+            ctx.moveTo(self.c0[0], self.c0[1])
+            ctx.lineTo(self.c1[0], self.c1[1])
+            ctx.stroke()
+
+        ctx.strokeStyle = self.colour
         ctx.lineWidth = self.width
-        if self.highlight != "":
-            ctx.strokeStyle = self.highlight
-        else:
-            ctx.strokeStyle = self.colour
         ctx.beginPath()
         ctx.moveTo(self.c0[0], self.c0[1])
         ctx.lineTo(self.c1[0], self.c1[1])
@@ -71,7 +82,7 @@ class Line(Graphic):
         r = pdist(c0, c1)
         a = pdist(c0, p)
         b = pdist(c1, p)
-        return (a+b)-r # lazy man's metric
+        return 1.+(a+b)-r # lazy man's metric
 
 
 class Circle(Graphic):
@@ -83,10 +94,14 @@ class Circle(Graphic):
 
     def render(self):
         ctx = self.ctx
-        if self.highlight != "":
-            ctx.strokeStyle = self.highlight
-        else:
-            ctx.strokeStyle = self.colour
+        if self.highlight:
+            ctx.strokeStyle = HIGHTLIGHT
+            ctx.lineWidth = EXPAND*self.width
+            ctx.beginPath()
+            ctx.arc(self.c[0], self.c[1], self.r, 0, 2*pi)
+            ctx.stroke()
+
+        ctx.strokeStyle = self.colour
         ctx.lineWidth = self.width
         ctx.beginPath()
         ctx.arc(self.c[0], self.c[1], self.r, 0, 2*pi)
@@ -94,16 +109,32 @@ class Circle(Graphic):
 
     def distance(self, x, y):
         r = pdist(self.c, (x, y))
-        return abs(r - self.r)
+        return 0.5*abs(r - self.r)
+
+
+class Text(Graphic):
+    def __init__(self, canvas, x, y, text):
+        self.x = x
+        self.y = y
+        self.text = text
+        Graphic.__init__(self, canvas, "black")
+
+    def render(self):
+        ctx = self.ctx
+        ctx.font = "48px serif";
+        ctx.fillStyle = self.colour
+        ctx.fillText(self.text, self.x, self.y)
 
 
 class Disc(Circle):
     def render(self):
         ctx = self.ctx
-        if self.highlight != "":
-            ctx.fillStyle = self.highlight
-        else:
-            ctx.fillStyle = self.colour
+        if self.highlight:
+            ctx.fillStyle = HIGHTLIGHT
+            ctx.beginPath()
+            ctx.arc(self.c[0], self.c[1], 0.8*EXPAND*self.r, 0, 2*pi)
+            ctx.fill()
+        ctx.fillStyle = self.colour
         ctx.beginPath()
         ctx.arc(self.c[0], self.c[1], self.r, 0, 2*pi)
         ctx.fill()
@@ -113,6 +144,22 @@ class Disc(Circle):
         if r > self.r:
             return r - self.r
         return 0.
+
+
+class Rectangle(Graphic):
+    def __init__(self, canvas, x, y, w, h, colour):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        Graphic.__init__(self, canvas, colour)
+
+    def render(self):
+        ctx = self.ctx
+        ctx.fillStyle = self.colour
+        ctx.beginPath()
+        ctx.rect(self.x, self.y, self.w, self.h)
+        ctx.fill()
 
 
 class Canvas(object):
@@ -128,11 +175,11 @@ class Canvas(object):
     def mouse_event(self, e):
         mouse_x = e.offsetX
         mouse_y = e.offsetY
-        status("mouse!")
+        #status("mouse!")
         #window.requestNextAnimationFrame(render)
 
         for item in self.items:
-            item.highlight = ""
+            item.highlight = False
 
         item = self.hit(mouse_x, mouse_y)
 
@@ -142,9 +189,9 @@ class Canvas(object):
 
         if len(item.children):
             for child in item.children:
-                debug(child.__class__.__name__, "red")
-                child.highlight = "red"
-        item.highlight = "red"
+                #debug(child.__class__.__name__, "red")
+                child.highlight = True
+        item.highlight = True
 
         self.render()
 
@@ -163,6 +210,14 @@ class Canvas(object):
     def disc(self, x, y, r, colour="black"):
         dx, dy = self.offset
         return Disc(self, x+dx, y+dy, r, width, colour)
+
+    def rectangle(self, x, y, w, h, colour):
+        dx, dy = self.offset
+        return Rectangle(self, x+dx, y+dy, w, h, colour)
+
+    def text(self, x, y, text):
+        dx, dy = self.offset
+        return Text(self, x+dx, y+dy, text)
 
     def render(self):
         ctx = self.ctx
@@ -201,12 +256,31 @@ class Flag(object):
         self.point = None
 
 
+POINT = "ForestGreen"
+LINE = "FireBrick"
+#SURFACE = "RoyalBlue"
+SURFACE = "SteelBlue"
+
+def render_flag():
+    canvas = Canvas("canvas-flag")
+    width, height = canvas.width, canvas.height
+
+    R = 0.4*height
+    r = 10
+
+    canvas.rectangle(0, -R, 1.3*R, 1.0*R, SURFACE)
+    canvas.line(0, -R, 0, +R, 5, LINE)
+    canvas.disc(0, -R, r, POINT)
+
+    canvas.render()
+
+
+render_flag()
+    
+
 def fano_chambers():
-    POINT = "ForestGreen"
-    LINE = "FireBrick"
 
     canvas = Canvas("canvas-fano-chambers")
-
     width, height = canvas.width, canvas.height
 
     R = 0.22*height
@@ -242,10 +316,12 @@ def fano_chambers():
     points = [P7, P4, P6, P3, P1, P2, P5]
     lines =  [L7, L6, L3, L4, L1, L5, L2]
 
+    canvas.text(-100, 0.4*height, "Geometry")
+
     # Chambers
 
     R = 0.35*height
-    canvas.translate(+0.55*width, -0.1*height)
+    canvas.translate(+0.50*width, -0.1*height)
 
     dtheta = (2*pi)/14
     theta = 3*pi/2
@@ -273,14 +349,19 @@ def fano_chambers():
 
     theta = pi/2
     for i in range(7):
-        canvas.disc(R*cos(theta), -R*sin(theta), r, LINE)
+        item = canvas.disc(R*cos(theta), -R*sin(theta), r, LINE)
+        item.children.append(lines[i])
+        lines[i].children.append(item)
         theta += dtheta
 
-        canvas.disc(R*cos(theta), -R*sin(theta), r, POINT)
+        item = canvas.disc(R*cos(theta), -R*sin(theta), r, POINT)
+        item.children.append(points[i])
+        points[i].children.append(item)
         theta += dtheta
+
+    canvas.text(-100, 0.5*height, "Incidence")
 
     canvas.render()
-
 
 fano_chambers()
 
@@ -477,7 +558,8 @@ def hexagon(x0, y0, r):
 
 
 radius = 50
-radius1 = 0.85 * radius
+#radius1 = 0.85 * radius
+radius1 = 0.95 * radius
 dps = []
 theta = 0.
 for i in range(6):
@@ -490,18 +572,20 @@ class Player(object):
         self.point = dps[0]
         self.line = 0 # 0, 2, 4
         self.face = +1 # +1, -1
+        self.word = ""
         canvas.addEventListener('keydown', self.keydown_event, False);
 
     def render(self):
         x, y = self.point
-        r = 5
-        ctx.fillStyle = GREEN
-        ctx.strokeStyle = GREEN
-        ctx.beginPath()
-        ctx.arc(x, y, r, 0., 2*pi)
-        ctx.fill()
+        #ctx.fillStyle = GREEN
+        #ctx.strokeStyle = GREEN
 
-        ctx.lineWidth = 3
+        ctx.fillStyle = SURFACE
+        dx, dy = dps[(self.line+self.face)%6]
+        hexagon(x+dx, y+dy, radius1)
+
+        ctx.strokeStyle = LINE
+        ctx.lineWidth = 5
         ctx.beginPath()
         ctx.moveTo(x, y)
         check(0<=self.line<6, "line = {}".format(str(self.line)))
@@ -509,8 +593,11 @@ class Player(object):
         ctx.lineTo(x+dx, y+dy)
         ctx.stroke()
 
-        dx, dy = dps[(self.line+self.face)%6]
-        hexagon(x+dx, y+dy, radius1)
+        r = 8
+        ctx.fillStyle = POINT
+        ctx.beginPath()
+        ctx.arc(x, y, r, 0., 2*pi)
+        ctx.fill()
 
     def send_point(self):
         self.point = padd(self.point, dps[self.line])
@@ -526,13 +613,19 @@ class Player(object):
         self.face = -self.face
 
     def keydown_event(self, e):
-        status("keydown {}".format(e.key))
+        #status("keydown {}".format(e.key))
+        word = self.word
         if e.key == 'j':
             self.send_point()
+            word = "J"+word
         elif e.key == 'k':
             self.send_line()
+            word = "K"+word
         elif e.key == 'l':
             self.send_face()
+            word = "L"+word
+        status(word)
+        self.word = word
         #render()
         window.requestNextAnimationFrame(render)
         
@@ -585,7 +678,7 @@ def render_paused(ctx):
     ctx.arc(0, 0, 70, 0, 2*pi)
     ctx.fill()
 
-    status("paused")
+    #status("paused")
     ctx.globalAlpha = 1.0
     ctx.lineWidth = 10
     ctx.strokeStyle = "white"
@@ -610,13 +703,13 @@ def mouse_event(e):
     mouse_y = e.offsetY
     global state
     state = "playing"
-    status("play")
+    #status("play")
     ctx.globalAlpha = 1.0
     window.requestNextAnimationFrame(render)
 
 canvas.addEventListener('mousedown', mouse_event, False);
 
-#window.requestNextAnimationFrame(render)
+window.requestNextAnimationFrame(render)
 
 
 

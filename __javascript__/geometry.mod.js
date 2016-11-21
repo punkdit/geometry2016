@@ -72,10 +72,15 @@
 				self.ctx = canvas.ctx;
 				self.children = list ([]);
 				self.colour = colour;
-				self.highlight = '';
+				self.highlight = false;
 				canvas.items.add (self);
+			});},
+			get distance () {return __get__ (this, function (self, x, y) {
+				return 99999;
 			});}
 		});
+		var HIGHTLIGHT = 'orange';
+		var EXPAND = 2.0;
 		var Line = __class__ ('Line', [Graphic], {
 			get __init__ () {return __get__ (this, function (self, canvas, x0, y0, x1, y1, width, colour) {
 				if (typeof width == 'undefined' || (width != null && width .__class__ == __kwargdict__)) {;
@@ -91,13 +96,16 @@
 			});},
 			get render () {return __get__ (this, function (self) {
 				var ctx = self.ctx;
+				if (self.highlight) {
+					ctx.strokeStyle = HIGHTLIGHT;
+					ctx.lineWidth = EXPAND * self.width;
+					ctx.beginPath ();
+					ctx.moveTo (self.c0 [0], self.c0 [1]);
+					ctx.lineTo (self.c1 [0], self.c1 [1]);
+					ctx.stroke ();
+				}
+				ctx.strokeStyle = self.colour;
 				ctx.lineWidth = self.width;
-				if (self.highlight != '') {
-					ctx.strokeStyle = self.highlight;
-				}
-				else {
-					ctx.strokeStyle = self.colour;
-				}
 				ctx.beginPath ();
 				ctx.moveTo (self.c0 [0], self.c0 [1]);
 				ctx.lineTo (self.c1 [0], self.c1 [1]);
@@ -111,7 +119,7 @@
 				var r = pdist (c0, c1);
 				var a = pdist (c0, p);
 				var b = pdist (c1, p);
-				return (a + b) - r;
+				return (1.0 + (a + b)) - r;
 			});}
 		});
 		var Circle = __class__ ('Circle', [Graphic], {
@@ -129,12 +137,14 @@
 			});},
 			get render () {return __get__ (this, function (self) {
 				var ctx = self.ctx;
-				if (self.highlight != '') {
-					ctx.strokeStyle = self.highlight;
+				if (self.highlight) {
+					ctx.strokeStyle = HIGHTLIGHT;
+					ctx.lineWidth = EXPAND * self.width;
+					ctx.beginPath ();
+					ctx.arc (self.c [0], self.c [1], self.r, 0, 2 * pi);
+					ctx.stroke ();
 				}
-				else {
-					ctx.strokeStyle = self.colour;
-				}
+				ctx.strokeStyle = self.colour;
 				ctx.lineWidth = self.width;
 				ctx.beginPath ();
 				ctx.arc (self.c [0], self.c [1], self.r, 0, 2 * pi);
@@ -142,18 +152,33 @@
 			});},
 			get distance () {return __get__ (this, function (self, x, y) {
 				var r = pdist (self.c, tuple ([x, y]));
-				return abs (r - self.r);
+				return 0.5 * abs (r - self.r);
+			});}
+		});
+		var Text = __class__ ('Text', [Graphic], {
+			get __init__ () {return __get__ (this, function (self, canvas, x, y, text) {
+				self.x = x;
+				self.y = y;
+				self.text = text;
+				Graphic.__init__ (self, canvas, 'black');
+			});},
+			get render () {return __get__ (this, function (self) {
+				var ctx = self.ctx;
+				ctx.font = '48px serif';
+				ctx.fillStyle = self.colour;
+				ctx.fillText (self.text, self.x, self.y);
 			});}
 		});
 		var Disc = __class__ ('Disc', [Circle], {
 			get render () {return __get__ (this, function (self) {
 				var ctx = self.ctx;
-				if (self.highlight != '') {
-					ctx.fillStyle = self.highlight;
+				if (self.highlight) {
+					ctx.fillStyle = HIGHTLIGHT;
+					ctx.beginPath ();
+					ctx.arc (self.c [0], self.c [1], (0.8 * EXPAND) * self.r, 0, 2 * pi);
+					ctx.fill ();
 				}
-				else {
-					ctx.fillStyle = self.colour;
-				}
+				ctx.fillStyle = self.colour;
 				ctx.beginPath ();
 				ctx.arc (self.c [0], self.c [1], self.r, 0, 2 * pi);
 				ctx.fill ();
@@ -164,6 +189,22 @@
 					return r - self.r;
 				}
 				return 0.0;
+			});}
+		});
+		var Rectangle = __class__ ('Rectangle', [Graphic], {
+			get __init__ () {return __get__ (this, function (self, canvas, x, y, w, h, colour) {
+				self.x = x;
+				self.y = y;
+				self.w = w;
+				self.h = h;
+				Graphic.__init__ (self, canvas, colour);
+			});},
+			get render () {return __get__ (this, function (self) {
+				var ctx = self.ctx;
+				ctx.fillStyle = self.colour;
+				ctx.beginPath ();
+				ctx.rect (self.x, self.y, self.w, self.h);
+				ctx.fill ();
 			});}
 		});
 		var Canvas = __class__ ('Canvas', [object], {
@@ -185,11 +226,10 @@
 			get mouse_event () {return __get__ (this, function (self, e) {
 				var mouse_x = e.offsetX;
 				var mouse_y = e.offsetY;
-				status ('mouse!');
 				var __iterable0__ = self.items;
 				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
 					var item = __iterable0__ [__index0__];
-					item.highlight = '';
+					item.highlight = false;
 				}
 				var item = self.hit (mouse_x, mouse_y);
 				if (item === null) {
@@ -200,11 +240,10 @@
 					var __iterable0__ = item.children;
 					for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
 						var child = __iterable0__ [__index0__];
-						debug (child.__class__.__name__, 'red');
-						child.highlight = 'red';
+						child.highlight = true;
 					}
 				}
-				item.highlight = 'red';
+				item.highlight = true;
 				self.render ();
 			});},
 			get translate () {return __get__ (this, function (self, dx, dy) {
@@ -243,6 +282,18 @@
 				var dx = __left0__ [0];
 				var dy = __left0__ [1];
 				return Disc (self, x + dx, y + dy, r, width, colour);
+			});},
+			get rectangle () {return __get__ (this, function (self, x, y, w, h, colour) {
+				var __left0__ = self.offset;
+				var dx = __left0__ [0];
+				var dy = __left0__ [1];
+				return Rectangle (self, x + dx, y + dy, w, h, colour);
+			});},
+			get text () {return __get__ (this, function (self, x, y, text) {
+				var __left0__ = self.offset;
+				var dx = __left0__ [0];
+				var dy = __left0__ [1];
+				return Text (self, x + dx, y + dy, text);
 			});},
 			get render () {return __get__ (this, function (self) {
 				var ctx = self.ctx;
@@ -289,9 +340,23 @@
 				self.point = null;
 			});}
 		});
+		var POINT = 'ForestGreen';
+		var LINE = 'FireBrick';
+		var SURFACE = 'SteelBlue';
+		var render_flag = function () {
+			var canvas = Canvas ('canvas-flag');
+			var __left0__ = tuple ([canvas.width, canvas.height]);
+			var width = __left0__ [0];
+			var height = __left0__ [1];
+			var R = 0.4 * height;
+			var r = 10;
+			canvas.rectangle (0, -(R), 1.3 * R, 1.0 * R, SURFACE);
+			canvas.line (0, -(R), 0, +(R), 5, LINE);
+			canvas.disc (0, -(R), r, POINT);
+			canvas.render ();
+		};
+		render_flag ();
 		var fano_chambers = function () {
-			var POINT = 'ForestGreen';
-			var LINE = 'FireBrick';
 			var canvas = Canvas ('canvas-fano-chambers');
 			var __left0__ = tuple ([canvas.width, canvas.height]);
 			var width = __left0__ [0];
@@ -320,8 +385,9 @@
 			var P7 = canvas.disc (0, 0, r, POINT);
 			var points = list ([P7, P4, P6, P3, P1, P2, P5]);
 			var lines = list ([L7, L6, L3, L4, L1, L5, L2]);
+			canvas.text (-(100), 0.4 * height, 'Geometry');
 			var R = 0.35 * height;
-			canvas.translate (+(0.55) * width, -(0.1) * height);
+			canvas.translate (+(0.5) * width, -(0.1) * height);
 			var dtheta = (2 * pi) / 14;
 			var theta = (3 * pi) / 2;
 			for (var i = 0; i < 14; i++) {
@@ -343,11 +409,16 @@
 			}
 			var theta = pi / 2;
 			for (var i = 0; i < 7; i++) {
-				canvas.disc (R * cos (theta), -(R) * sin (theta), r, LINE);
+				var item = canvas.disc (R * cos (theta), -(R) * sin (theta), r, LINE);
+				item.children.append (lines [i]);
+				lines [i].children.append (item);
 				theta += dtheta;
-				canvas.disc (R * cos (theta), -(R) * sin (theta), r, POINT);
+				var item = canvas.disc (R * cos (theta), -(R) * sin (theta), r, POINT);
+				item.children.append (points [i]);
+				points [i].children.append (item);
 				theta += dtheta;
 			}
+			canvas.text (-(100), 0.5 * height, 'Incidence');
 			canvas.render ();
 		};
 		fano_chambers ();
@@ -473,7 +544,7 @@
 			ctx.fill ();
 		};
 		var radius = 50;
-		var radius1 = 0.85 * radius;
+		var radius1 = 0.95 * radius;
 		var dps = list ([]);
 		var theta = 0.0;
 		for (var i = 0; i < 6; i++) {
@@ -485,19 +556,20 @@
 				self.point = dps [0];
 				self.line = 0;
 				self.face = +(1);
+				self.word = '';
 				canvas.addEventListener ('keydown', self.keydown_event, false);
 			});},
 			get render () {return __get__ (this, function (self) {
 				var __left0__ = self.point;
 				var x = __left0__ [0];
 				var y = __left0__ [1];
-				var r = 5;
-				ctx.fillStyle = GREEN;
-				ctx.strokeStyle = GREEN;
-				ctx.beginPath ();
-				ctx.arc (x, y, r, 0.0, 2 * pi);
-				ctx.fill ();
-				ctx.lineWidth = 3;
+				ctx.fillStyle = SURFACE;
+				var __left0__ = dps [__mod__ (self.line + self.face, 6)];
+				var dx = __left0__ [0];
+				var dy = __left0__ [1];
+				hexagon (x + dx, y + dy, radius1);
+				ctx.strokeStyle = LINE;
+				ctx.lineWidth = 5;
 				ctx.beginPath ();
 				ctx.moveTo (x, y);
 				check ((0 <= self.line && self.line < 6), 'line = {}'.format (str (self.line)));
@@ -506,10 +578,11 @@
 				var dy = __left0__ [1];
 				ctx.lineTo (x + dx, y + dy);
 				ctx.stroke ();
-				var __left0__ = dps [__mod__ (self.line + self.face, 6)];
-				var dx = __left0__ [0];
-				var dy = __left0__ [1];
-				hexagon (x + dx, y + dy, radius1);
+				var r = 8;
+				ctx.fillStyle = POINT;
+				ctx.beginPath ();
+				ctx.arc (x, y, r, 0.0, 2 * pi);
+				ctx.fill ();
 			});},
 			get send_point () {return __get__ (this, function (self) {
 				self.point = padd (self.point, dps [self.line]);
@@ -524,20 +597,25 @@
 				self.face = -(self.face);
 			});},
 			get keydown_event () {return __get__ (this, function (self, e) {
-				status ('keydown {}'.format (e.key));
+				var word = self.word;
 				if (e.key == 'j') {
 					self.send_point ();
+					var word = 'J' + word;
 				}
 				else {
 					if (e.key == 'k') {
 						self.send_line ();
+						var word = 'K' + word;
 					}
 					else {
 						if (e.key == 'l') {
 							self.send_face ();
+							var word = 'L' + word;
 						}
 					}
 				}
+				status (word);
+				self.word = word;
 				window.requestNextAnimationFrame (render);
 			});}
 		});
@@ -578,7 +656,6 @@
 			ctx.beginPath ();
 			ctx.arc (0, 0, 70, 0, 2 * pi);
 			ctx.fill ();
-			status ('paused');
 			ctx.globalAlpha = 1.0;
 			ctx.lineWidth = 10;
 			ctx.strokeStyle = 'white';
@@ -598,11 +675,11 @@
 			mouse_x = e.offsetX;
 			mouse_y = e.offsetY;
 			state = 'playing';
-			status ('play');
 			ctx.globalAlpha = 1.0;
 			window.requestNextAnimationFrame (render);
 		};
 		canvas.addEventListener ('mousedown', mouse_event, false);
+		window.requestNextAnimationFrame (render);
 		__pragma__ ('<use>' +
 			'math' +
 		'</use>')
@@ -611,13 +688,18 @@
 			__all__.Canvas = Canvas;
 			__all__.Circle = Circle;
 			__all__.Disc = Disc;
+			__all__.EXPAND = EXPAND;
 			__all__.Flag = Flag;
 			__all__.GREEN = GREEN;
 			__all__.Graphic = Graphic;
+			__all__.HIGHTLIGHT = HIGHTLIGHT;
 			__all__.LINE = LINE;
 			__all__.Line = Line;
 			__all__.POINT = POINT;
 			__all__.Player = Player;
+			__all__.Rectangle = Rectangle;
+			__all__.SURFACE = SURFACE;
+			__all__.Text = Text;
 			__all__.acos = acos;
 			__all__.acosh = acosh;
 			__all__.asin = asin;
@@ -667,6 +749,7 @@
 			__all__.render = render;
 			__all__.render_chambers = render_chambers;
 			__all__.render_fano = render_fano;
+			__all__.render_flag = render_flag;
 			__all__.render_paused = render_paused;
 			__all__.sin = sin;
 			__all__.sinh = sinh;
