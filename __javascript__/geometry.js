@@ -1,5 +1,5 @@
 "use strict";
-// Transcrypt'ed from Python, 2016-11-22 10:34:43
+// Transcrypt'ed from Python, 2016-11-22 10:45:12
 function geometry () {
 	var __symbols__ = ['__esv5__'];
 	var __all__ = {};
@@ -2218,6 +2218,7 @@ function geometry () {
 			get mouse_event () {return __get__ (this, function (self, e) {
 				var mouse_x = e.offsetX;
 				var mouse_y = e.offsetY;
+				window.requestNextAnimationFrame (self.render);
 				var __iterable0__ = self.items;
 				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
 					var item = __iterable0__ [__index0__];
@@ -2225,7 +2226,6 @@ function geometry () {
 				}
 				var item = self.hit (mouse_x, mouse_y);
 				if (item === null) {
-					self.render ();
 					return ;
 				}
 				if (len (item.children)) {
@@ -2236,7 +2236,6 @@ function geometry () {
 					}
 				}
 				item.highlight = true;
-				self.render ();
 			});},
 			get translate () {return __get__ (this, function (self, dx, dy) {
 				self.offset = padd (self.offset, tuple ([dx, dy]));

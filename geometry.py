@@ -176,7 +176,7 @@ class Canvas(object):
         mouse_x = e.offsetX
         mouse_y = e.offsetY
         #status("mouse!")
-        #window.requestNextAnimationFrame(render)
+        window.requestNextAnimationFrame(self.render)
 
         for item in self.items:
             item.highlight = False
@@ -184,7 +184,7 @@ class Canvas(object):
         item = self.hit(mouse_x, mouse_y)
 
         if item is None:
-            self.render()
+            #self.render()
             return
 
         if len(item.children):
@@ -193,7 +193,7 @@ class Canvas(object):
                 child.highlight = True
         item.highlight = True
 
-        self.render()
+        #self.render()
 
     def translate(self, dx, dy):
         self.offset = padd(self.offset, (dx, dy))
