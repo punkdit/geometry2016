@@ -421,6 +421,79 @@
 			canvas.render ();
 		};
 		fano_chambers ();
+		var fano_appartment = function () {
+			var canvas = Canvas ('canvas-fano-appartment');
+			var __left0__ = tuple ([canvas.width, canvas.height]);
+			var width = __left0__ [0];
+			var height = __left0__ [1];
+			var R = 0.4 * height;
+			var r = 10;
+			canvas.translate (-(0.25) * width, -(0.1) * height);
+			var pts = list ([]);
+			var theta = (3 * pi) / 12.0 + pi / 2.0;
+			var dtheta = (2 * pi) / 12.0;
+			for (var i = 0; i < 12; i++) {
+				var x = R * cos (theta);
+				var y = -(R) * sin (theta);
+				pts.append (tuple ([x, y]));
+				theta += dtheta;
+			}
+			var __left0__ = tuple ([pts [0], pts [7]]);
+			var p = __left0__ [0];
+			var q = __left0__ [1];
+			var L1 = canvas.line (p [0], p [1], q [0], q [1], 5, LINE);
+			var __left0__ = tuple ([pts [3], pts [8]]);
+			var p = __left0__ [0];
+			var q = __left0__ [1];
+			var L2 = canvas.line (p [0], p [1], q [0], q [1], 5, LINE);
+			var __left0__ = tuple ([pts [4], pts [11]]);
+			var p = __left0__ [0];
+			var q = __left0__ [1];
+			var L3 = canvas.line (p [0], p [1], q [0], q [1], 5, LINE);
+			var R1 = 0.5 * R;
+			var theta = pi / 2.0 + pi / 6.0;
+			var P1 = canvas.disc (R1 * cos (theta), -(R1) * sin (theta), r, POINT);
+			theta += (2 * pi) / 3;
+			var P2 = canvas.disc (R1 * cos (theta), -(R1) * sin (theta), r, POINT);
+			theta += (2 * pi) / 3;
+			var P3 = canvas.disc (R1 * cos (theta), -(R1) * sin (theta), r, POINT);
+			canvas.text (-(100), 0.5 * height, 'Geometry');
+			var R = 0.35 * height;
+			canvas.translate (+(0.5) * width, -(0.0) * height);
+			var pts = list ([]);
+			var theta = pi / 2.0 + pi / 6.0;
+			for (var i = 0; i < 6; i++) {
+				var x = R1 * cos (theta);
+				var y = -(R1) * sin (theta);
+				pts.append (tuple ([x, y]));
+				theta += (2 * pi) / 6.0;
+			}
+			var points = list ([P1, P2, P2, P3, P3, P1]);
+			var lines = list ([L3, L3, L2, L2, L1, L1]);
+			for (var i = 0; i < 6; i++) {
+				var p = pts [i];
+				var q = pts [__mod__ (i + 1, 6)];
+				var item = canvas.line (p [0], p [1], q [0], q [1], 5.0);
+				item.children.append (points [i]);
+				item.children.append (lines [i]);
+			}
+			for (var i = 0; i < 6; i++) {
+				var p = pts [i];
+				if (__mod__ (i, 2) == 0) {
+					var item = canvas.disc (p [0], p [1], r, POINT);
+					item.children.append (points [i]);
+					points [i].children.append (item);
+				}
+				else {
+					var item = canvas.disc (p [0], p [1], r, LINE);
+					item.children.append (lines [i]);
+					lines [i].children.append (item);
+				}
+			}
+			canvas.text (-(100), 0.5 * height, 'Incidence');
+			canvas.render ();
+		};
+		fano_appartment ();
 		var canvas = document.getElementById ('canvas-fano');
 		var width = canvas.width;
 		var height = canvas.height;
@@ -718,6 +791,7 @@
 			__all__.e = e;
 			__all__.exp = exp;
 			__all__.expm1 = expm1;
+			__all__.fano_appartment = fano_appartment;
 			__all__.fano_chambers = fano_chambers;
 			__all__.floor = floor;
 			__all__.height = height;

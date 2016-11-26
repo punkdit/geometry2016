@@ -42,10 +42,12 @@ a theory that treated lines and points the same way:
         Any two lines determine a unique point.
     </li>
 </ol>
-This is called <em>projective</em> geometry:
+This is called a <em>projective plane</em> geometry:
 we added some more points at infinity so that those
 parallel lines have somewhere to meet.
-<!-- There's a third axiom that we skipped, which is ... -->
+There's a third axiom that we skipped, which is that there
+should be four points, no three of which lie on the same line.
+This rules out some degenerate geometries.
 
 <p>
 Now that we have some axioms, we can try drawing some
@@ -56,8 +58,7 @@ lines and points.
 <p>
 
 <p>
-Here is a good example of a finite projective
-geometry:
+Here is a good example of a finite projective plane:
 </p>
     <p align="center"><canvas id='canvas-fano' width='600' height='300'> Canvas Fail </canvas> </p>
 <p>
@@ -105,9 +106,21 @@ incidence diagram.
 Click on incidence relations (the black lines) to see how these correspond to
 a point and a line in the geometry.
 The whole thing is highly symmetric, and you can see that most clearly from the incidence picture.
-All seven lines actually "look the same", it's only when you try
+All seven lines actually "look the same"; it's only when you try
 to draw the geometry that one of the lines ends up looking like a circle.
 </p>
+
+<p>
+There's another kind of symmetry that you get from swapping points and lines...
+</p>
+
+<p>
+Thinking about projective planes some more, we see that any three points
+not all on the same line form a triangle. In this way projective planes are
+filled with triangles! If we just take one of these triangles and examine the
+incidence structure we find a hexagon shape:
+</p>
+    <p align="center"><canvas id='canvas-fano-appartment' width='800' height='400'> Canvas Fail </canvas> </p>
 
 <p>
 Any incident pair of a point and a line we call a <em>flag</em>.

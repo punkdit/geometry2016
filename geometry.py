@@ -367,6 +367,87 @@ fano_chambers()
 
 
 # -------------------------------------------------------
+
+
+def fano_appartment():
+
+    canvas = Canvas("canvas-fano-appartment")
+    width, height = canvas.width, canvas.height
+
+    R = 0.40*height
+    r = 10
+
+    canvas.translate(-0.25*width, -0.1*height)
+
+    pts = []
+    theta = 3*pi/12. + pi/2.
+    dtheta = 2*pi/12.
+    for i in range(12):
+        x = R*cos(theta)
+        y = -R*sin(theta)
+        pts.append((x, y))
+        theta += dtheta
+
+    p, q = pts[0], pts[7]
+    L1 = canvas.line(p[0], p[1], q[0], q[1], 5, LINE)
+    p, q = pts[3], pts[8]
+    L2 = canvas.line(p[0], p[1], q[0], q[1], 5, LINE)
+    p, q = pts[4], pts[11]
+    L3 = canvas.line(p[0], p[1], q[0], q[1], 5, LINE)
+
+    R1 = 0.5*R
+    theta = pi/2. + pi/6.
+    P1 = canvas.disc(R1*cos(theta), -R1*sin(theta), r, POINT)
+    theta += 2*pi/3
+    P2 = canvas.disc(R1*cos(theta), -R1*sin(theta), r, POINT)
+    theta += 2*pi/3
+    P3 = canvas.disc(R1*cos(theta), -R1*sin(theta), r, POINT)
+
+    canvas.text(-100, 0.5*height, "Geometry")
+
+    # Chambers
+
+    R = 0.35*height
+    canvas.translate(+0.50*width, -0.0*height)
+
+    pts = []
+    theta = pi/2. + pi/6.
+    for i in range(6):
+        x = R1*cos(theta)
+        y = -R1*sin(theta)
+        pts.append((x, y))
+        theta += 2*pi/6.
+
+    points = [P1, P2, P2, P3, P3, P1]
+    lines =  [L3, L3, L2, L2, L1, L1]
+    for i in range(6):
+        p = pts[i]
+        q = pts[(i+1)%6]
+        item = canvas.line(p[0], p[1], q[0], q[1], 5.)
+        item.children.append(points[i])
+        item.children.append(lines[i])
+
+    for i in range(6):
+        p = pts[i]
+        if i%2==0:
+            item = canvas.disc(p[0], p[1], r, POINT)
+            item.children.append(points[i])
+            points[i].children.append(item)
+        else:
+            item = canvas.disc(p[0], p[1], r, LINE)
+            item.children.append(lines[i])
+            lines[i].children.append(item)
+
+    canvas.text(-100, 0.5*height, "Incidence")
+
+    canvas.render()
+
+fano_appartment()
+
+
+    
+
+# -------------------------------------------------------
     
 
 canvas = document.getElementById('canvas-fano')
